@@ -1,0 +1,40 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © emkjee
+
+// references:
+//     1. TradingView std ma script 
+
+//@version=5
+indicator(title="Triple Weekly Moving Average",
+     shorttitle="3WMA",
+     overlay=true,
+     timeframe="",
+     timeframe_gaps=true)
+
+ma_len1      = input.int(13, minval=1,      title="First MA Length ",         group="MA Settings")
+ma_len2      = input.int(26, minval=1,      title="Second MA Length",         group="MA Settings")
+ma_len3      = input.int(52, minval=1,      title="Third MA Length ",         group="MA Settings")
+ma_source    = input(close,                 title="Source",                   group="MA Settings")
+ma_type1     = input.string(defval = "SMA", title="Method",                   group="MA Settings", options=["SMA", "EMA", "SMMA (RMA)", "WMA", "VWMA"])
+ma_type2     = input.string(defval = "SMA", title="Method",                   group="MA Settings", options=["SMA", "EMA", "SMMA (RMA)", "WMA", "VWMA"])
+ma_type3     = input.string(defval = "SMA", title="Method",                   group="MA Settings", options=["SMA", "EMA", "SMMA (RMA)", "WMA", "VWMA"])
+ma_lookahead = input.bool(false,            title="Lookahead on or off",      group="MA Settings")
+
+ma_calc(source, length, type) =>
+    switch type
+        "SMA"        => ta.sma (source, length)
+        "EMA"        => ta.ema (source, length)
+        "SMMA (RMA)" => ta.rma (source, length)
+        "WMA"        => ta.wma (source, length)
+        "VWMA"       => ta.vwma(source, length)
+
+ma_1 = request.security(syminfo.tickerid, "W", ma_calc(ma_source, ma_len1, ma_type1), lookahead=ma_lookahead ? barmerge.lookahead_on : barmerge.lookahead_off)
+ma_2 = request.security(syminfo.tickerid, "W", ma_calc(ma_source, ma_len2, ma_type2), lookahead=ma_lookahead ? barmerge.lookahead_on : barmerge.lookahead_off)
+ma_3 = request.security(syminfo.tickerid, "W", ma_calc(ma_source, ma_len3, ma_type3), lookahead=ma_lookahead ? barmerge.lookahead_on : barmerge.lookahead_off)
+
+firstma  = plot(ma_1,   color=color.red,    title="1MA", linewidth=1)
+secondma = plot(ma_2,   color=color.green,  title="2MA", linewidth=1)
+thirdma  = plot(ma_3,   color=color.blue,   title="3MA", linewidth=2)
+
+fill(firstma, secondma, color = (timeframe.isweekly) ? ma_1 >= ma_2 ? color.new(#AAF0D1, 60) : color.new(#FFE4E1,60) : na, title="MA12 Background Fill", fillgaps=true)
+fill(secondma, thirdma, color = (timeframe.isweekly) ? ma_2 >= ma_3 ? color.new(#A1CAF1, 60) : color.new(#FAF0BE,60) : na, title="MA23 Background Fill", fillgaps=true)
